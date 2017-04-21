@@ -2,7 +2,6 @@
  * Core MDSS framebuffer driver.
  *
  * Copyright (C) 2007 Google Incorporated
-<<<<<<< HEAD
  * Copyright (c) 2008-2015, The Linux Foundation. All rights reserved.
  * Copyright (C) 2016 XiaoMi, Inc.
  *
@@ -1484,11 +1483,8 @@ static int mdss_fb_blank_sub(int blank_mode, struct fb_info *info,
 				/* Stop Display thread */
 				if (mfd->disp_thread)
 					mdss_fb_stop_disp_thread(mfd);
-<<<<<<< HEAD
 				mutex_lock(&mfd->bl_lock);
-=======
 				mdss_fb_set_backlight(mfd, 0);
->>>>>>> caf/LA.BR.1.2.4_rb1.48
 				mfd->bl_updated = 0;
 				mutex_unlock(&mfd->bl_lock);
 			}
