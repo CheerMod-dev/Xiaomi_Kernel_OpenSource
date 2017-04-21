@@ -2,6 +2,7 @@
  * Core MDSS framebuffer driver.
  *
  * Copyright (C) 2007 Google Incorporated
+<<<<<<< HEAD
  * Copyright (c) 2008-2015, The Linux Foundation. All rights reserved.
  * Copyright (C) 2016 XiaoMi, Inc.
  *
@@ -834,6 +835,7 @@ static int mdss_fb_probe(struct platform_device *pdev)
 	mfd->bl_min_lvl = 30;
 	mfd->ad_bl_level = 0;
 	mfd->fb_imgType = MDP_RGBA_8888;
+	mfd->calib_mode_bl = 0;
 
 	if (mfd->panel.type == MIPI_VIDEO_PANEL ||
 				mfd->panel.type == MIPI_CMD_PANEL) {
@@ -1232,7 +1234,7 @@ void mdss_fb_set_backlight(struct msm_fb_data_type *mfd, u32 bkl_lvl)
 		 * as well as setting bl_level to bkl_lvl even though the
 		 * backlight has been set to the scaled value.
 		 */
-		if (mfd->bl_level_old == temp) {
+		if (mfd->bl_level_scaled == temp) {
 			mfd->bl_level = bkl_lvl;
 		} else {
 			if (mfd->bl_level != bkl_lvl)
@@ -1240,7 +1242,8 @@ void mdss_fb_set_backlight(struct msm_fb_data_type *mfd, u32 bkl_lvl)
 			pr_debug("backlight sent to panel :%d\n", temp);
 			pdata->set_backlight(pdata, temp);
 			mfd->bl_level = bkl_lvl;
-			mfd->bl_level_old = temp;
+			mfd->bl_level_scaled = temp;
+			bl_notify_needed = true;
 		}
 
 		if (ad_bl_notify_needed)
@@ -1273,7 +1276,7 @@ void mdss_fb_update_backlight(struct msm_fb_data_type *mfd)
 				mdss_fb_bl_update_notify(mfd,
 					NOTIFY_TYPE_BL_AD_ATTEN_UPDATE);
 			pdata->set_backlight(pdata, temp);
-			mfd->bl_level_old = mfd->unset_bl_level;
+			mfd->bl_level_scaled = mfd->unset_bl_level;
 			mfd->bl_updated = 1;
 		}
 	}
@@ -1379,6 +1382,26 @@ static int mdss_fb_unblank_sub(struct msm_fb_data_type *mfd)
 			schedule_delayed_work(&mfd->idle_notify_work,
 				msecs_to_jiffies(mfd->idle_time));
 	}
+
+	/* Reset the backlight only if the panel was off */
+	if (mdss_panel_is_power_off(cur_power_state)) {
+		mutex_lock(&mfd->bl_lock);
+		if (!mfd->bl_updated) {
+			mfd->bl_updated = 1;
+			/*
+			 * If in AD calibration mode then frameworks would not
+			 * be allowed to update backlight hence post unblank
+			 * the backlight would remain 0 (0 is set in blank).
+			 * Hence resetting back to calibration mode value
+			 */
+			if (!IS_CALIB_MODE_BL(mfd))
+				mdss_fb_set_backlight(mfd, mfd->unset_bl_level);
+			else
+				mdss_fb_set_backlight(mfd, mfd->calib_mode_bl);
+		}
+		mutex_unlock(&mfd->bl_lock);
+	}
+
 error:
 	return ret;
 }
@@ -1461,7 +1484,11 @@ static int mdss_fb_blank_sub(int blank_mode, struct fb_info *info,
 				/* Stop Display thread */
 				if (mfd->disp_thread)
 					mdss_fb_stop_disp_thread(mfd);
+<<<<<<< HEAD
 				mutex_lock(&mfd->bl_lock);
+=======
+				mdss_fb_set_backlight(mfd, 0);
+>>>>>>> caf/LA.BR.1.2.4_rb1.48
 				mfd->bl_updated = 0;
 				mutex_unlock(&mfd->bl_lock);
 			}
